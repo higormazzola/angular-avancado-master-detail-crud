@@ -3,6 +3,7 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Category } from '../shared/category.model';
 import { CategoryService } from '../shared/category.service';
 import { ActivatedRoute, Router } from '@angular/router';
+import toastr from "toastr";
 
 @Component({
   selector: 'app-category-form',
@@ -33,10 +34,20 @@ export class CategoryFormComponent implements OnInit, AfterContentChecked {
      this.setPageTitle();
   }
 
+  submitForm() {
+    this.submitingForm = true;
+
+    if(!this.id) {
+      this.createCategory();
+    } else {
+      this.updateCategory();
+    }
+  }
+
   private buildCategoryForm() {
     this.categoryForm = this.formBuilder.group({
       "id": [null],
-      "name": [null, Validators.required, Validators.minLength(2)],
+      "name": [null, [Validators.required, Validators.minLength(2)]],
       "description": [null]
     });
   }
@@ -56,6 +67,36 @@ export class CategoryFormComponent implements OnInit, AfterContentChecked {
     } else {
       this.pageTitle = 'Cadastro de Nova Categoria';
     }
+  }
+
+  private createCategory() {
+    const category: Category = Object.assign(new Category(), this.categoryForm.value);
+    this.categoryService.create(category).subscribe(category => {
+      this.actionForSuccess(category);
+    }, error => {
+      this.actionForError(error);
+    });
+  }
+
+  private updateCategory() {
+    const category: Category = Object.assign(new Category(), this.categoryForm.value);
+    this.categoryService.update(category).subscribe(category => {
+      this.actionForSuccess(category);
+    }, error => {
+      this.actionForError(error);
+    });
+  }
+
+  private actionForSuccess(category: Category) {
+    toastr.success("Solicitação processada com sucesso!");
+    this.router.navigateByUrl("categories", {skipLocationChange: true}).then(
+      () => this.router.navigate(["categories/edit", category.id])
+    )
+  }
+
+  private actionForError(error) {
+    toastr.error("Ocorreu um erro ao processar a sua solicitação!");
+    this.submitingForm = false;
   }
 
 }
